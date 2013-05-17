@@ -15,11 +15,12 @@
   "readmeFilename": "README.md",
   "gitHead": "816965736be28443ad77ae5e3f0478c16cf0edd4",
   "dependencies": {
-    "flatiron": "*",
+    "m2node": "*",
     "union": "*",
     "handlebars": "*",
     "freebase": "*",
     "cosy-lang": "*",
-    "nor-hal": "*"
+    "nor-hal": "*",
+    "zmq": "*"
   }
 }
