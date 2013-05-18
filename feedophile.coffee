@@ -2,7 +2,7 @@
 
 cluster = require 'cluster'
 http = require 'http'
-numCPUs = (require 'os').cpus().length + 1
+numCPUs = (require 'os').cpus().length
 zmq = require 'zmq'
 uuid = require 'uuid'
 edn = require 'jsedn'
