@@ -16,6 +16,18 @@ getReq = (req) ->
 		url: req.url
 		headers: req.headers
 
+class Message
+	constructor: (msg) ->
+		@id = msg.id
+		@msg = msg.msg
+	ednEncode: ->
+		edn.encode new edn.Tagged new edn.Tag("feedophile", "message"),
+			id: @id
+			msg: @msg
+
+edn.setTagAction new edn.Tag('feedophile', 'message'), (obj) ->
+    return new Message edn.toJS obj;
+
 master = ->
 	do cluster.fork for i in [0..numCPUs]
 
@@ -28,19 +40,19 @@ master = ->
 	resmap = {}
 
 	http.createServer (req, res) ->
-		msg =
+		msg = new Message 
 			id: do uuid.v1
-			req: getReq req
+			msg: getReq req
 		resmap[msg.id] = res
-		sockDown.send JSON.stringify msg
+		sockDown.send edn.encode msg
 	.listen 3000, "127.0.0.1"
 
-	sockUp.on 'message', (jsonMsg) ->
-		msg = JSON.parse jsonMsg
+	sockUp.on 'message', (strMsg) ->
+		msg = edn.parse strMsg.toString()
 		res = resmap[msg.id]
 		delete resmap[msg.id]
-		res.writeHead msg.code, msg.headers
-		res.end msg.msg
+		res.writeHead msg.msg.code, msg.msg.headers
+		res.end msg.msg.msg
 	console.log('Server running at http://127.0.0.1:3000/');
 
 worker = ->
@@ -50,14 +62,15 @@ worker = ->
 	sockUp = zmq.socket 'push'
 	sockUp.connect pubSubRepAddr
 
-	sockDown.on 'message', (jsonMsg) ->
-		msg = JSON.parse jsonMsg
-		reply =
+	sockDown.on 'message', (strMsg) ->
+		msg = edn.parse strMsg.toString()
+		reply = new Message
 			id: msg.id
-			code: 200
-			headers: {'Content-Type': 'text/plain'}
-			msg: 'Hello World from ' + process.pid + '\n'
-		sockUp.send JSON.stringify reply
+			msg:
+				code: 200
+				headers: {'Content-Type': 'text/plain'}
+				msg: 'Hello World from ' + process.pid + '\n'
+		sockUp.send edn.encode reply
 
 
 if cluster.isMaster
